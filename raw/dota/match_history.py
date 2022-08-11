@@ -76,7 +76,7 @@ class Ingestor:
 # DBTITLE 1,Setup
 ingestion_mode = dbutils.widgets.get("mode")
 date = dbutils.widgets.get("date")
-delay_days = dbutils.widgets.get("delay")
+delay_days = int(dbutils.widgets.get("delay"))
 
 date_stop = datetime.datetime.strptime(date, "%Y-%m-%d") + datetime.timedelta(days=-delay_days)
 date_stop = datetime.datetime.strftime(date_stop, "%Y-%m-%d")
