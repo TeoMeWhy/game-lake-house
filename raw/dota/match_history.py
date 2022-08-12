@@ -21,7 +21,7 @@ class Ingestor:
         self.table_name = table_name
         self.date_stop = date_stop
         self.datetime_stop = (datetime.datetime
-                                      .strptime(date_stop, '%Y-%m-%d')
+                                      .strptime(date_stop, "%Y-%m-%d")
                                       .date())
 
     def get_data(self, **params):
@@ -53,11 +53,11 @@ class Ingestor:
         self.save_data(df)
         return res, df
 
-    def get_min_date(sefl, df):
+    def get_min_date(self, df):
         return (df.select(F.min(F.to_date("dt_start")))
                   .collect()[0][0])
         
-    def get_min_match_id(sefl, df):
+    def get_min_match_id(self, df):
         return (df.select(F.min("match_id"))
                   .collect()[0][0])
     
