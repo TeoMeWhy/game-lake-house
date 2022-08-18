@@ -82,8 +82,8 @@ date_stop = datetime.datetime.strptime(date, "%Y-%m-%d") + datetime.timedelta(da
 date_stop = datetime.datetime.strftime(date_stop, "%Y-%m-%d")
 
 url = "https://api.opendota.com/api/proMatches"
-table_path = "/mnt/datalake/game-lake-house/raw/dota/match_history"
 table_name = "match_history"
+table_path = f"/mnt/datalake/game-lake-house/raw/dota/{table_name}"
 
 match_ingestor = Ingestor(url, table_name, table_path, date_stop)
 
