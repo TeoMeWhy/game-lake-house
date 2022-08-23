@@ -1,29 +1,50 @@
 # Databricks notebook source
+# DBTITLE 1,Imports
 import json
 import time
+import sys
+
+sys.path.insert(0, "../../lib/")
+
+import database  as db
 
 from pyspark.sql.types import *
+from delta.tables import *
 
-def import_schema(path):
-    with open(path, 'r') as open_file:
-        return json.load(open_file)
-      
 spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
 spark.conf.set("spark.databricks.delta.autoCompact.enabled", "true")
 
 # COMMAND ----------
 
-schema_json = import_schema("match_schema.json")
+# DBTITLE 1,Schema
+schema_json = db.import_schema("schemas/match_schema.json")
 schema = StructType.fromJson(schema_json)
 
 # COMMAND ----------
 
+# DBTITLE 1,Setup
 origin_path = "/mnt/datalake/game-lake-house/raw/dota/match_details_raw"
 
 target_path = "/mnt/datalake/game-lake-house/bronze/dota/matches"
 checkpoint_path = "/mnt/datalake/game-lake-house/bronze/dota/match_details_checkpoint"
 
+database = 'bronze_gamelakehouse'
+table = 'dota_match_details'
 
+# COMMAND ----------
+
+# DBTITLE 1,Full Load
+if db.table_exists(database, table, spark):
+    print("Tabela já existente!")
+else:
+    print("Realizando a pricimeira carga da tabela...")
+    df = spark.read.json(origin_path, schema=schema)
+    df.write.format("delta").mode("overwrite").saveAsTable(f"{database}.{table}")
+    print("ok")
+
+# COMMAND ----------
+
+# DBTITLE 1,ReadStream
 df_stream = (spark.readStream
                   .format('cloudFiles')
                   .option('cloudFiles.format', 'json')
@@ -33,13 +54,25 @@ df_stream = (spark.readStream
 
 # COMMAND ----------
 
+# DBTITLE 1,WriteStream
+def upsertDelta(batchId, df, delta_table):
+    (delta_table.alias("d")
+               .merge(df.alias("n"), "d.match_id = n.match_id")
+               .whenMatchedUpdateAll()
+               .whenNotMatchedInsertAll()
+               .execute())
+
+delta_table = DeltaTable.forPath(spark, target_path)
+    
 stream = (df_stream.writeStream
                    .format('delta')
+                   .foreachBatch(lambda df, batchId: upsertDelta(batchId, df, delta_table))
                    .option('checkpointLocation', checkpoint_path)
-                   .start(target_path))
+                   .start())
 
 # COMMAND ----------
 
-time.sleep(60*5)
+# DBTITLE 1,Stop Stream
+time.sleep(60*2)
 stream.processAllAvailable()
 stream.stop()
