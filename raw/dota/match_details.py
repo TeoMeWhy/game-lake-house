@@ -6,15 +6,22 @@
 import json
 import os
 import requests
+import sys
 
 import pandas as pd
 
 from tqdm import tqdm
 
+sys.path.insert(0, "../../lib")
+
+import secrets_tools as sct
+
 from delta.tables import *
 
 spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
 spark.conf.set("spark.databricks.delta.autoCompact.enabled", "true")
+
+API_KEY = sct.get_secret("dota", "api_key", dbutils)
 
 # COMMAND ----------
 
@@ -69,11 +76,11 @@ class Ingestor:
         deltaTable.optimize().executeCompaction()
         deltaTable.vacuum()
 
-    def execute(self):
+    def execute(self, api_key):
         match_ids = self.get_match_ids()
         
         for i in tqdm(match_ids):
-            res = self.get_data(match_id=i)
+            res = self.get_data(match_id=i, api_key=api_key)
             if 'match_id' in res.json():
                 self.save_data(res.json())
             else:
@@ -91,4 +98,4 @@ ingest = Ingestor(url, table_name, table_path)
 
 # COMMAND ----------
 
-ingest.execute()
+ingest.execute(api_key=API_KEY)

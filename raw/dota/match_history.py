@@ -3,7 +3,15 @@
 import requests
 import datetime
 
+import sys
+
 from pyspark.sql import functions as F
+
+sys.path.insert(0, "../../lib")
+
+import secrets_tools as sct
+
+API_KEY = sct.get_secret("dota", "api_key", dbutils)
 
 # COMMAND ----------
 
@@ -93,7 +101,7 @@ match_ingestor = Ingestor(url, table_name, table_path, date_stop)
 if ingestion_mode == "old":
     df = spark.read.format("delta").load(table_path)
     min_match_id = match_ingestor.get_min_match_id(df)
-    match_ingestor.get_history_data(less_than_match_id=min_match_id)
+    match_ingestor.get_history_data(less_than_match_id=min_match_id, api_key=API_KEY)
     
 elif ingestion_mode == "new":
-    match_ingestor.get_history_data()
+    match_ingestor.get_history_data(api_key=API_KEY)
