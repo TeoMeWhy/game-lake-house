@@ -17,6 +17,7 @@ spark.conf.set("spark.databricks.delta.autoCompact.enabled", "true")
 # COMMAND ----------
 
 # DBTITLE 1,Schema
+
 schema_json = db.import_schema("schemas/match_schema.json")
 schema = StructType.fromJson(schema_json)
 
@@ -25,11 +26,12 @@ schema = StructType.fromJson(schema_json)
 # DBTITLE 1,Setup
 origin_path = "/mnt/datalake/game-lake-house/raw/dota/match_details_raw"
 
-target_path = "/mnt/datalake/game-lake-house/bronze/dota/matches"
 checkpoint_path = "/mnt/datalake/game-lake-house/bronze/dota/match_details_checkpoint"
 
 database = 'bronze_gamelakehouse'
 table = 'dota_match_details'
+
+database_table = f'{database}.{table}'
 
 # COMMAND ----------
 
@@ -48,7 +50,7 @@ else:
 df_stream = (spark.readStream
                   .format('cloudFiles')
                   .option('cloudFiles.format', 'json')
-                  .option("cloudFiles.maxFilesPerTrigger", 1000)
+                  .option("cloudFiles.maxFilesPerTrigger", 10000)
                   .schema(schema)
                   .load(origin_path))
 
@@ -62,7 +64,7 @@ def upsertDelta(batchId, df, delta_table):
                .whenNotMatchedInsertAll()
                .execute())
 
-delta_table = DeltaTable.forPath(spark, target_path)
+delta_table = DeltaTable.forName(spark, database_table)
     
 stream = (df_stream.writeStream
                    .format('delta')
