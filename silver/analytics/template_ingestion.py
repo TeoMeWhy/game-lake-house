@@ -10,13 +10,13 @@ from delta import *
 
 # COMMAND ----------
 
-table = 'fs_dota_player_matches'
-database = 'silver_gamelakehouse'
+table = dbutils.widgets.get("table")
+database = dbutils.widgets.get("database")
 
 database_table = f"{database}.{table}"
 
-date_start = '2022-08-01'
-date_stop = '2022-08-25'
+date_start = dbutils.widgets.get("date_start")
+date_stop = dbutils.widgets.get("date_stop")
 
 dates = du.date_range(date_start, date_stop)
 
@@ -55,9 +55,9 @@ delta_table = DeltaTable.forName(spark, database_table)
 
 
 for dt in dates:
-    
+
     query_exec = query.format(date=dt)
     df = spark.sql(query_exec)
     upsert(df, delta_table, ['dtReference', 'account_id'])
-    
+
 delta_table.vacuum()
