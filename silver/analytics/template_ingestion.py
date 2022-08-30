@@ -12,11 +12,13 @@ from delta import *
 
 table = dbutils.widgets.get("table")
 database = dbutils.widgets.get("database")
-
-database_table = f"{database}.{table}"
-
+id_fields = [i for i in dbutils.widgets.get("id_fields").split(",")]
 date_start = dbutils.widgets.get("date_start")
 date_stop = dbutils.widgets.get("date_stop")
+
+id_fields += ['dtReference']
+
+database_table = f"{database}.{table}"
 
 dates = du.date_range(date_start, date_stop)
 
@@ -58,6 +60,6 @@ for dt in dates:
 
     query_exec = query.format(date=dt)
     df = spark.sql(query_exec)
-    upsert(df, delta_table, ['dtReference', 'account_id'])
+    upsert(df, delta_table, id_fields)
 
 delta_table.vacuum()
