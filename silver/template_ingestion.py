@@ -1,7 +1,7 @@
 # Databricks notebook source
 import sys
 
-sys.path.insert(0, "../../lib")
+sys.path.insert(0, "../lib")
 
 import database as db
 import date_utils as du
