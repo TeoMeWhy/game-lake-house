@@ -12,6 +12,7 @@ from delta import *
 
 table = dbutils.widgets.get("table")
 database = dbutils.widgets.get("database")
+game = dbutils.widgets.get("game") # dota, lol, valorant
 id_fields = [i for i in dbutils.widgets.get("id_fields").split(",")]
 date_start = dbutils.widgets.get("date_start")
 date_stop = dbutils.widgets.get("date_stop")
@@ -22,7 +23,7 @@ database_table = f"{database}.{table}"
 
 dates = du.date_range(date_start, date_stop)
 
-query = db.import_query(f"{table}.sql")
+query = db.import_query(f"{game}/{table}.sql")
 
 # COMMAND ----------
 
