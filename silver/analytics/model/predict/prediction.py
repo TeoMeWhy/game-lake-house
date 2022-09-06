@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %pip install lightgbm
+
+# COMMAND ----------
+
 import datetime
 import requests
 import sys
@@ -16,7 +20,6 @@ def get_live_matches():
     url = "https://api.opendota.com/api/live"
     res = requests.get(url, params={"api_key":API_KEY})
     return res.json()
-
 
 # COMMAND ----------
 
