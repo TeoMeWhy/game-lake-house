@@ -1,8 +1,4 @@
 # Databricks notebook source
-# MAGIC %pip install lightgbm
-
-# COMMAND ----------
-
 import datetime
 import requests
 import sys
