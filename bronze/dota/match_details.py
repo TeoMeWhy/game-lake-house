@@ -17,7 +17,6 @@ spark.conf.set("spark.databricks.delta.autoCompact.enabled", "true")
 # COMMAND ----------
 
 # DBTITLE 1,Schema
-
 schema_json = db.import_schema("schemas/match_schema.json")
 schema = StructType.fromJson(schema_json)
 
@@ -39,9 +38,10 @@ database_table = f'{database}.{table}'
 if db.table_exists(database, table, spark):
     print("Tabela já existente!")
 else:
-    print("Realizando a pricimeira carga da tabela...")
+    print("Realizando a primeira carga da tabela...")
     df = spark.read.json(origin_path, schema=schema)
     df.write.format("delta").mode("overwrite").saveAsTable(f"{database}.{table}")
+    dbutils.fs.rm(checkpoint_path, True)
     print("ok")
 
 # COMMAND ----------
