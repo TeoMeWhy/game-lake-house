@@ -3,12 +3,20 @@ DROP TABLE IF EXISTS bronze_gamelakehouse.dota_match_players;
 
 CREATE TABLE bronze_gamelakehouse.dota_match_players
 
-WITH tb_players AS (
-  SELECT explode(players) AS player
-  FROM bronze_gamelakehouse.dota_match_details
+WITH tb AS (
+
+SELECT
+  dire_team,
+  radiant_team,
+  explode(players) AS player
+FROM bronze_gamelakehouse.dota_match_details
+
 )
 
-SELECT player.*,
+SELECT 
+       player.*,
+       CASE WHEN player.isRadiant = TRUE THEN radiant_team ELSE dire_team END AS team,
        from_unixtime(player.start_time, 'yyyy-MM-dd HH:mm:ss') AS dt_match
-FROM tb_players
+FROM tb
+
 ;
