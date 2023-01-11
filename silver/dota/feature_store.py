@@ -31,12 +31,19 @@ def range_date(date_start:str, date_stop:str)->[str]:
 # COMMAND ----------
 
 # DBTITLE 1,Setup
+# schema = 'silver_gamelakehouse'
+# fs_name = 'fs_player_summary'
+# table_name = f'{schema}.{table}'
+# dt_start = '2022-01-01'
+# dt_stop = '2023-01-11'
+# lag = 150
+
 schema = 'silver_gamelakehouse'
-fs_name = 'fs_player_summary'
+fs_name = dbutils.widgets.get("fs_name")
 table_name = f'{schema}.{table}'
-dt_start = '2022-01-01'
-dt_stop = '2023-01-11'
-lag = 150
+dt_start = dbutils.widgets.get("dt_start")
+dt_stop = dbutils.widgets.get("dt_stop")
+lag = dbutils.widgets.get("lag")
 
 fs_name += f"_lag{lag}"
 
@@ -63,7 +70,3 @@ for i in dates:
     fs_client.write_table(name=table_name, df=df, mode='merge')
     print(i, "- Done!")
     
-
-# COMMAND ----------
-
-
