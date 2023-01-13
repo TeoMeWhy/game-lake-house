@@ -9,10 +9,8 @@ sys.path.insert(0, "../../lib/")
 import database  as db
 
 from pyspark.sql.types import *
+from pyspark.sql import window
 from delta.tables import *
-
-spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
-spark.conf.set("spark.databricks.delta.autoCompact.enabled", "true")
 
 # COMMAND ----------
 
@@ -25,10 +23,10 @@ schema = StructType.fromJson(schema_json)
 # DBTITLE 1,Setup
 origin_path = "/mnt/datalake/game-lake-house/raw/dota/match_details_raw"
 
-checkpoint_path = "/mnt/datalake/game-lake-house/bronze/dota/match_details_checkpoint"
+checkpoint_path = "/mnt/datalake/checkpoints/bronze/dota/match_details"
 
-database = 'bronze_gamelakehouse'
-table = 'dota_match_details'
+database = 'bronze.dota'
+table = 'match_details'
 
 database_table = f'{database}.{table}'
 
@@ -37,9 +35,10 @@ database_table = f'{database}.{table}'
 # DBTITLE 1,Full Load
 if db.table_exists(database, table, spark):
     print("Tabela já existente!")
+
 else:
     print("Realizando a primeira carga da tabela...")
-    df = spark.read.json(origin_path, schema=schema)
+    df = spark.createDataFrame(data=[], schema=schema)
     df.write.format("delta").mode("overwrite").saveAsTable(f"{database}.{table}")
     dbutils.fs.rm(checkpoint_path, True)
     print("ok")
@@ -50,7 +49,6 @@ else:
 df_stream = (spark.readStream
                   .format('cloudFiles')
                   .option('cloudFiles.format', 'json')
-                  .option("cloudFiles.maxFilesPerTrigger", 10000)
                   .schema(schema)
                   .load(origin_path))
 
@@ -58,8 +56,21 @@ df_stream = (spark.readStream
 
 # DBTITLE 1,WriteStream
 def upsertDelta(batchId, df, delta_table):
+
+    df.createOrReplaceGlobalTempView("dota_ingestion")
+    
+    query = '''
+    
+    select *
+    from global_temp.dota_ingestion
+    qualify row_number() over (partition by match_id order by start_time desc) = 1
+    
+    '''
+    
+    df_merge = spark.sql(query)
+
     (delta_table.alias("d")
-               .merge(df.alias("n"), "d.match_id = n.match_id")
+               .merge(df_merge.alias("n"), "d.match_id = n.match_id")
                .whenMatchedUpdateAll()
                .whenNotMatchedInsertAll()
                .execute())
@@ -70,11 +81,5 @@ stream = (df_stream.writeStream
                    .format('delta')
                    .foreachBatch(lambda df, batchId: upsertDelta(batchId, df, delta_table))
                    .option('checkpointLocation', checkpoint_path)
+                   .trigger(once=True)
                    .start())
-
-# COMMAND ----------
-
-# DBTITLE 1,Stop Stream
-time.sleep(60*2)
-stream.processAllAvailable()
-stream.stop()
