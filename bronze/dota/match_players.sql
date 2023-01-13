@@ -9,7 +9,7 @@ WITH tb AS (
     dire_team,
     radiant_team,
     explode(players) AS player
-  FROM bronze_gamelakehouse.dota_match_details
+  FROM bronze.dota.match_details
 
 )
 
