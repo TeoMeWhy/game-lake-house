@@ -1,7 +1,7 @@
 -- Databricks notebook source
-DROP TABLE IF EXISTS bronze_gamelakehouse.dota_teams ;
+DROP TABLE IF EXISTS bronze.dota.teams ;
 
-CREATE TABLE bronze_gamelakehouse.dota_teams 
+CREATE TABLE bronze.dota.teams
 WITH tb_teams AS (
 
   SELECT from_unixtime(start_time, 'yyyy-MM-dd') AS dt_match,

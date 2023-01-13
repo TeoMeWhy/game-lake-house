@@ -1,15 +1,15 @@
 -- Databricks notebook source
-DROP TABLE IF EXISTS bronze_gamelakehouse.dota_match_players;
+DROP TABLE IF EXISTS bronze.dota.match_players;
 
-CREATE TABLE bronze_gamelakehouse.dota_match_players
+CREATE TABLE bronze.dota.match_players
 
 WITH tb AS (
 
-SELECT
-  dire_team,
-  radiant_team,
-  explode(players) AS player
-FROM bronze_gamelakehouse.dota_match_details
+  SELECT
+    dire_team,
+    radiant_team,
+    explode(players) AS player
+  FROM bronze_gamelakehouse.dota_match_details
 
 )
 
