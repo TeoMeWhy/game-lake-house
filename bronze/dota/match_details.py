@@ -23,7 +23,7 @@ schema = StructType.fromJson(schema_json)
 # DBTITLE 1,Setup
 origin_path = "/mnt/datalake/game-lake-house/raw/dota/match_details_raw"
 
-checkpoint_path = "/mnt/datalake/checkpoints/bronze/dota/match_details"
+checkpoint_path = "/mnt/game-lake-house/checkpoints/bronze/dota/match_details"
 
 database = 'bronze.dota'
 table = 'match_details'
@@ -83,3 +83,5 @@ stream = (df_stream.writeStream
                    .option('checkpointLocation', checkpoint_path)
                    .trigger(once=True)
                    .start())
+
+delta_table.vacuum()
