@@ -41,7 +41,7 @@ WITH tb_summary AS (
          AVG(sentry_uses) AS avgSentryUses,
          AVG(lane_efficiency) AS avgLaneEfficiency
 
-  FROM bronze_gamelakehouse.dota_match_players
+  FROM bronze.dota.match_players
 
   WHERE dt_match < '{date}'
   AND dt_match >= date_add('{date}', -{lag})

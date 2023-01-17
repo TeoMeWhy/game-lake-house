@@ -2,8 +2,6 @@
 # DBTITLE 1,Imports
 import datetime
 
-from databricks import feature_store
-
 # COMMAND ----------
 
 # DBTITLE 1,Funcoes
@@ -12,8 +10,12 @@ def import_query(path:str)->str:
         query = open_file.read()
     return query
 
-def table_exists(schema:str, table:str)->bool:
-    count = spark.sql(f"SHOW TABLES FROM {schema}").filter(f"tableName = '{table}'").count()
+def table_exists(table_name:str)->bool:
+    
+    schema = ".".join(table_name.split(".")[:-1])
+    table = table_name.split(".")[-1]
+    query = f"SHOW TABLES FROM {schema}"
+    count = spark.sql(query).filter(f"tableName = '{table}'").count()
     return count > 0
 
 def range_date(date_start:str, date_stop:str)->[str]:
@@ -31,42 +33,39 @@ def range_date(date_start:str, date_stop:str)->[str]:
 # COMMAND ----------
 
 # DBTITLE 1,Setup
-# schema = 'silver_gamelakehouse'
-# fs_name = 'fs_player_summary'
-# table_name = f'{schema}.{table}'
-# dt_start = '2022-01-01'
-# dt_stop = '2023-01-11'
-# lag = 150
-
-schema = 'silver_gamelakehouse'
+catalog = 'silver'
+schema = 'dota'
 fs_name = dbutils.widgets.get("fs_name")
-table_name = f'{schema}.{table}'
 dt_start = dbutils.widgets.get("dt_start")
 dt_stop = dbutils.widgets.get("dt_stop")
-lag = dbutils.widgets.get("lag")
 
-fs_name += f"_lag{lag}"
+lag = 180
+
+table_name = f'{catalog}.{schema}.{fs_name}'
+table_name
 
 # COMMAND ----------
 
 # DBTITLE 1,Processo
-fs_client = feature_store.FeatureStoreClient()
 dates = range_date(dt_start, dt_stop)
+
 query = import_query(f"sql/{fs_name}.sql")
 
-if not table_exists(schema, fs_name):
-    query_exec = query.format(date=date.pop(0), lag=lag)
+if not table_exists(table_name):
+    query_exec = query.format(date=dates.pop(0), lag=lag)
     
     df = spark.sql(query_exec)
     
-    fs_client.create_table(name=table_name, 
-                           primary_keys=['dtReference','idAccount'],
-                           df=df,
-                           partition_columns= ['dtReference'])
+    (df.coalesce(1)
+       .write
+       .mode("overwrite")
+       .format("delta")
+       .option("overwriteSchema", "true")
+       .saveAsTable(table_name))
 
 for i in dates:
     query_exec = query.format(date=i, lag=lag)
     df = spark.sql(query_exec)
-    fs_client.write_table(name=table_name, df=df, mode='merge')
+    spark.sql(f"DELETE FROM {table_name} WHERE dtReference = '{i}'")
+    df.write.mode("append").format("delta").saveAsTable(table_name)
     print(i, "- Done!")
-    
