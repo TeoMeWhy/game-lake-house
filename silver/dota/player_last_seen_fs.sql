@@ -1,6 +1,9 @@
 -- Databricks notebook source
-select *
+DROP TABLE IF EXISTS silver.dota.player_last_seen_fs;
 
-from silver.dota.fs_player_summary
+CREATE TABLE silver.dota.player_last_seen_fs
+SELECT *
+FROM silver.dota.fs_player_summary
+QUALIFY row_number() OVER (PARTITION BY idAccount ORDER BY dtReference DESC) = 1
 
-qualify row_number() over (partition by idAccount order by dtReference desc) = 1
+;
