@@ -88,7 +88,3 @@ with mlflow.start_run():
 
     print(metrics_train)
     print(metrics_test)
-
-# COMMAND ----------
-
-X_train.columns.tolist()
