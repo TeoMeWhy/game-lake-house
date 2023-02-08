@@ -18,7 +18,7 @@ def table_exists(table, database):
 database = 'silver.dota'
 table = dbutils.widgets.get("table")
 database_table = f"{database}.{table}"
-id_fields = dbutils.widgets.get("id_fields")
+id_fields = dbutils.widgets.get("id_fields").split(",")
 
 # COMMAND ----------
 
