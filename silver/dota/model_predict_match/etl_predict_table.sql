@@ -205,7 +205,7 @@ tb_summary_player as (
 
   FROM tb_match_player AS t1
 
-  INNER JOIN silver.dota.fs_player_summary as t2
+  INNER JOIN silver.dota.last_seen_fs_player_summary as t2
   ON t1.account_id = t2.idAccount
 
   GROUP BY t1.match_id

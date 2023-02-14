@@ -4,6 +4,7 @@
 # COMMAND ----------
 
 import mlflow
+import json
 import requests
 from pyspark.sql import functions as F
 
@@ -12,11 +13,17 @@ model = mlflow.sklearn.load_model("models:/Dota2 Pre Match/production")
 def import_query(path):
     with open(path) as open_file:
         return open_file.read()
+      
+def import_features(path):
+    with open(path, 'r') as open_file:
+        return json.load(open_file)['features']
 
 # COMMAND ----------
 
+API_KEY = dbutils.secrets.get("dota", "api_key")
+
 url = "https://api.opendota.com/api/live"
-data = requests.get(url).json()
+data = requests.get(url, params={"api_key": API_KEY}).json()
 
 # COMMAND ----------
 
@@ -28,135 +35,7 @@ df_predict = spark.sql(query).toPandas()
 
 # COMMAND ----------
 
-features = [ 'avgWinHeroRandiant1',
-             'avgWinHeroRandiant2',
-             'avgWinHeroRandiant3',
-             'avgWinHeroRandiant4',
-             'avgWinHeroRandiant5',
-             'avgKdaHeroRandiant1',
-             'avgKdaHeroRandiant2',
-             'avgKdaHeroRandiant3',
-             'avgKdaHeroRandiant4',
-             'avgKdaHeroRandiant5',
-             'avgDeathsHeroRandiant1',
-             'avgDeathsHeroRandiant2',
-             'avgDeathsHeroRandiant3',
-             'avgDeathsHeroRandiant4',
-             'avgDeathsHeroRandiant5',
-             'avgXpPerMinHeroRandiant1',
-             'avgXpPerMinHeroRandiant2',
-             'avgXpPerMinHeroRandiant3',
-             'avgXpPerMinHeroRandiant4',
-             'avgXpPerMinHeroRandiant5',
-             'avgGoldPerMinHeroRandiant1',
-             'avgGoldPerMinHeroRandiant2',
-             'avgGoldPerMinHeroRandiant3',
-             'avgGoldPerMinHeroRandiant4',
-             'avgGoldPerMinHeroRandiant5',
-             'avgWinHeroDire1',
-             'avgWinHeroDire2',
-             'avgWinHeroDire3',
-             'avgWinHeroDire4',
-             'avgWinHeroDire5',
-             'avgKdaHeroDire1',
-             'avgKdaHeroDire2',
-             'avgKdaHeroDire3',
-             'avgKdaHeroDire4',
-             'avgKdaHeroDire5',
-             'avgDeathsHeroDire1',
-             'avgDeathsHeroDire2',
-             'avgDeathsHeroDire3',
-             'avgDeathsHeroDire4',
-             'avgDeathsHeroDire5',
-             'avgXpPerMinHeroDire1',
-             'avgXpPerMinHeroDire2',
-             'avgXpPerMinHeroDire3',
-             'avgXpPerMinHeroDire4',
-             'avgXpPerMinHeroDire5',
-             'avgGoldPerMinHeroDire1',
-             'avgGoldPerMinHeroDire2',
-             'avgGoldPerMinHeroDire3',
-             'avgGoldPerMinHeroDire4',
-             'avgGoldPerMinHeroDire5',
-             'qtRecencyRadiant',
-             'qtMatchesRadiant',
-             'avgAssistsRadiant',
-             'avgCampsStackedRadiant',
-             'avgCreepsStackedRadiant',
-             'avgDeathsRadiant',
-             'avgDeniesRadiant',
-             'avgFirstbloodClaimedRadiant',
-             'avgGoldRadiant',
-             'avgGoldPerMinRadiant',
-             'avgGoldSpentRadiant',
-             'avgHeroDamageRadiant',
-             'avgHeroHealingRadiant',
-             'avgKillsRadiant',
-             'avgLastHitsRadiant',
-             'avgLevelRadiant',
-             'avgNetWorthRadiant',
-             'avgRoshansKilledRadiant',
-             'avgRunePickupsRadiant',
-             'avgXpPerMinRadiant',
-             'avgWinRadiant',
-             'avgTotalGoldRadiant',
-             'avgTotalXpRadiant',
-             'avgKillsPerMinRadiant',
-             'avgKdaRadiant',
-             'avgNeutralKillsRadiant',
-             'avgTowerKillsRadiant',
-             'avgCourierKillsRadiant',
-             'avgLaneKillsRadiant',
-             'avgHeroKillsRadiant',
-             'avgObserverKillsRadiant',
-             'avgSentryKillsRadiant',
-             'avgRoshanKillsRadiant',
-             'avgNecronomiconKillsRadiant',
-             'avgAncientKillsRadiant',
-             'avgBuybackCountRadiant',
-             'avgObserverUsesRadiant',
-             'avgSentryUsesRadiant',
-             'avgLaneEfficiencyRadiant',
-             'qtRecencyDire',
-             'qtMatchesDire',
-             'avgAssistsDire',
-             'avgCampsStackedDire',
-             'avgCreepsStackedDire',
-             'avgDeathsDire',
-             'avgDeniesDire',
-             'avgFirstbloodClaimedDire',
-             'avgGoldDire',
-             'avgGoldPerMinDire',
-             'avgGoldSpentDire',
-             'avgHeroDamageDire',
-             'avgHeroHealingDire',
-             'avgKillsDire',
-             'avgLastHitsDire',
-             'avgLevelDire',
-             'avgNetWorthDire',
-             'avgRoshansKilledDire',
-             'avgRunePickupsDire',
-             'avgXpPerMinDire',
-             'avgWinDire',
-             'avgTotalGoldDire',
-             'avgTotalXpDire',
-             'avgKillsPerMinDire',
-             'avgKdaDire',
-             'avgNeutralKillsDire',
-             'avgTowerKillsDire',
-             'avgCourierKillsDire',
-             'avgLaneKillsDire',
-             'avgHeroKillsDire',
-             'avgObserverKillsDire',
-             'avgSentryKillsDire',
-             'avgRoshanKillsDire',
-             'avgNecronomiconKillsDire',
-             'avgAncientKillsDire',
-             'avgBuybackCountDire',
-             'avgObserverUsesDire',
-             'avgSentryUsesDire',
-             'avgLaneEfficiencyDire']
-
+features = import_features("features.json")
 X_predict = df_predict[features]
 
 # COMMAND ----------
