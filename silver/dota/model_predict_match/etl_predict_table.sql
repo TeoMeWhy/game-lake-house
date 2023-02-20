@@ -13,8 +13,9 @@ WITH tb_exploded as (
          team_name_radiant,
          explode(players) as players_exploded
 
-  from dota2_live_games
+  from bronze.dota.live_games
   where league_id <> 0
+  and from_unixtime(activate_time) >= now() - interval 2 days
 
 ),
 
@@ -356,7 +357,7 @@ SELECT t1.match_id,
        t3.avgSentryUsesDire,
        t3.avgLaneEfficiencyDire
 
-FROM dota2_live_games as t1
+FROM bronze.dota.live_games as t1
 
 LEFT JOIN tb_match_hero_summary as t2
 ON t1.match_id = t2.match_id
