@@ -86,6 +86,8 @@ stream =(df_stream.writeStream
 
 stream.awaitTermination(timeout=120)
 
+df_delta.vacuum()
+
 # COMMAND ----------
 
 # DBTITLE 1,Score das partidas dos últimos 2 dias
