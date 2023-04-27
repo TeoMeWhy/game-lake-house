@@ -3,6 +3,8 @@
 import requests
 import datetime
 
+import delta
+
 import sys
 
 from pyspark.sql import functions as F
@@ -23,7 +25,7 @@ def import_query(path):
 
 class Ingestor:
     
-    def __init__(self, url, table_name, table_path, date_stop):
+    def __init__(self, url, table_name, table_path, date_stop, api_key):
         self.url = url
         self.table_path = table_path
         self.table_name = table_name
@@ -31,8 +33,10 @@ class Ingestor:
         self.datetime_stop = (datetime.datetime
                                       .strptime(date_stop, "%Y-%m-%d")
                                       .date())
+        self.api_key = api_key
 
     def get_data(self, **params):
+        params['api_key'] = self.api_key
         res = requests.get(self.url, params=params)
         return res
 
@@ -73,11 +77,13 @@ class Ingestor:
         res, df = self.get_and_save(**params)
         min_date = self.get_min_date(df)
         min_match_id = self.get_min_match_id(df)
+        print(min_date)
         
         while min_date >= self.datetime_stop:
             res, df = self.get_and_save(less_than_match_id=min_match_id)
             min_date = self.get_min_date(df)
             min_match_id = self.get_min_match_id(df)
+            print(min_date)
 
 # COMMAND ----------
 
@@ -93,7 +99,7 @@ url = "https://api.opendota.com/api/proMatches"
 table_name = "match_history"
 table_path = f"/mnt/datalake/game-lake-house/raw/dota/{table_name}"
 
-match_ingestor = Ingestor(url, table_name, table_path, date_stop)
+match_ingestor = Ingestor(url, table_name, table_path, date_stop, api_key=API_KEY)
 
 # COMMAND ----------
 
@@ -101,7 +107,24 @@ match_ingestor = Ingestor(url, table_name, table_path, date_stop)
 if ingestion_mode == "old":
     df = spark.read.format("delta").load(table_path)
     min_match_id = match_ingestor.get_min_match_id(df)
-    match_ingestor.get_history_data(less_than_match_id=min_match_id, api_key=API_KEY)
+    match_ingestor.get_history_data(less_than_match_id=min_match_id)
     
 elif ingestion_mode == "new":
-    match_ingestor.get_history_data(api_key=API_KEY)
+    match_ingestor.get_history_data()
+
+# COMMAND ----------
+
+# DBTITLE 1,Limpeza de dados antigos
+if date[-1] == '01':
+
+    (spark.read
+          .format("delta")
+          .load(table_path)
+          .distinct()
+          .write
+          .format("delta")
+          .mode("overwrite")
+          .save(table_path))
+
+    df_delta = delta.DeltaTable.forPath(spark, table_path)
+    df_delta.vacuum()
